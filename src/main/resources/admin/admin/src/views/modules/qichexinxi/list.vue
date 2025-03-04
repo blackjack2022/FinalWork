@@ -1,0 +1,1348 @@
+<template>
+	<div class="main-content" :style='{"padding":"20px 30px 30px","margin":"0 auto","color":"#555","borderRadius":"0px","background":"rgba(255,255,255,1)","width":"100%","fontSize":"16px"}'>
+		<!-- 列表页 -->
+		<template v-if="showFlag">
+			<el-form class="center-form-pv" :style='{"padding":"0px 10px 0","margin":"0px","fontSize":"inherit","overflow":"hidden","background":"none"}' :inline="true" :model="searchForm">
+				<el-row :style='{"width":"100%","fontSize":"inherit","display":"block"}' >
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}'>
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">车牌号</label>
+						<el-input v-model="searchForm.chepaihao" placeholder="车牌号" @keydown.enter.native="search()" clearable></el-input>
+					</div>
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}'>
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">电动车型号</label>
+						<el-input v-model="searchForm.qichexinghao" placeholder="电动车型号" @keydown.enter.native="search()" clearable></el-input>
+					</div>
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}' class="select" label="电动车分类" prop="qichefenlei">
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">电动车分类</label>
+						<el-select clearable v-model="searchForm.qichefenlei" placeholder="请选择电动车分类" >
+							<el-option v-for="(item,index) in qichefenleiOptions" v-bind:key="index" :label="item" :value="item"></el-option>
+						</el-select>
+					</div>
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}'>
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">品牌</label>
+						<el-input v-model="searchForm.pinpai" placeholder="品牌" @keydown.enter.native="search()" clearable></el-input>
+					</div>
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}'>
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">颜色</label>
+						<el-input v-model="searchForm.yanse" placeholder="颜色" @keydown.enter.native="search()" clearable></el-input>
+					</div>
+					<div :style='{"margin":"0 10px 0 0","fontSize":"inherit","display":"inline-block"}' class="select" label="状态" prop="zhuangtai">
+						<label :style='{"margin":"0 10px 0 0","color":"inherit","display":"inline-block","lineHeight":"40px","fontSize":"inherit","fontWeight":"500","height":"40px"}' class="item-label">状态</label>
+						<el-select clearable v-model="searchForm.zhuangtai" placeholder="请选择状态" >
+							<el-option v-for="(item,index) in zhuangtaiOptions" v-bind:key="index" :label="item" :value="item"></el-option>
+						</el-select>
+					</div>
+					<el-button class="search" type="success" @click="search()">
+						<span class="icon iconfont icon-chakan12" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","height":"40px"}'></span>
+						查找
+					</el-button>
+				</el-row>
+
+				<el-row class="actions" :style='{"width":"100%","margin":"10px 0 10px","fontSize":"14px","color":"inherit","flexWrap":"wrap","display":"flex"}'>
+					<el-button class="add" v-if="isAuth('qichexinxi','新增')" type="success" @click="addOrUpdateHandler()">
+						<span class="icon iconfont icon-tianjia13" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none"}'></span>
+						新增
+					</el-button>
+					<el-button class="del" v-if="isAuth('qichexinxi','删除')" :disabled="dataListSelections.length?false:true" type="danger" @click="deleteHandler()">
+						<span class="icon iconfont icon-shanchu7" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none","height":"40px"}'></span>
+						移除
+					</el-button>
+
+
+
+					<el-button class="btn18" v-if="isAuth('qichexinxi','电动车分类')" type="success" @click="chartDialog1()">
+						<span class="icon iconfont icon-a-fenxiang2" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none"}'></span>
+						电动车分类
+					</el-button>
+					<el-button class="btn18" v-if="isAuth('qichexinxi','电动车状态')" type="success" @click="chartDialog2()">
+						<span class="icon iconfont icon-a-fenxiang2" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none"}'></span>
+						电动车状态
+					</el-button>
+				</el-row>
+			</el-form>
+			<div :style='{"padding":"0","borderColor":"#eee","borderRadius":"0px","background":"none","borderWidth":"1px 0 0 1px","width":"100%","borderStyle":"solid"}'>
+				<el-table class="tables"
+					:stripe='false'
+					:style='{"padding":"0","borderColor":"rgba(19,161,230,.2)","color":"inherit","borderRadius":"0px","borderWidth":"0","background":"none","width":"100%","fontSize":"inherit","borderStyle":"solid"}' 
+					:border='false'
+					v-if="isAuth('qichexinxi','查看')"
+					:data="dataList"
+					v-loading="dataListLoading"
+				@selection-change="selectionChangeHandler">
+					<el-table-column :resizable='true' type="selection" align="center" width="50"></el-table-column>
+					<el-table-column :resizable='true' :sortable='true' label="序号" type="index" width="50" />
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="chepaihao"
+						label="车牌号">
+						<template slot-scope="scope">
+							{{scope.row.chepaihao}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="qichexinghao"
+						label="电动车型号">
+						<template slot-scope="scope">
+							{{scope.row.qichexinghao}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="qichefenlei"
+						label="电动车分类">
+						<template slot-scope="scope">
+							{{scope.row.qichefenlei}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="pinpai"
+						label="品牌">
+						<template slot-scope="scope">
+							{{scope.row.pinpai}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="yanse"
+						label="颜色">
+						<template slot-scope="scope">
+							{{scope.row.yanse}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="huandangfangshi"
+						label="换挡方式">
+						<template slot-scope="scope">
+							{{scope.row.huandangfangshi}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true' prop="fengmian" width="200" label="封面">
+						<template slot-scope="scope">
+							<div v-if="scope.row.fengmian">
+								<img v-if="scope.row.fengmian.substring(0,4)=='http'" :src="scope.row.fengmian.split(',')[0]" width="100" height="100" style="object-fit: cover" @click="imgPreView(scope.row.fengmian.split(',')[0])">
+								<img v-else :src="$base.url+scope.row.fengmian.split(',')[0]" width="100" height="100" style="object-fit: cover" @click="imgPreView($base.url+scope.row.fengmian.split(',')[0])">
+							</div>
+							<div v-else>无图片</div>
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="zhuangtai"
+						label="状态">
+						<template slot-scope="scope">
+							{{scope.row.zhuangtai}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="zujin"
+						label="租金">
+						<template slot-scope="scope">
+							{{scope.row.zujin}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="yajin"
+						label="押金">
+						<template slot-scope="scope">
+							{{scope.row.yajin}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="cheliangpailiang"
+						label="车辆排量">
+						<template slot-scope="scope">
+							{{scope.row.cheliangpailiang}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="youhao"
+						label="电池规格">
+						<template slot-scope="scope">
+							{{scope.row.youhao}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="zaizhong"
+						label="载重">
+						<template slot-scope="scope">
+							{{scope.row.zaizhong}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="dengjiriqi"
+						label="登记日期">
+						<template slot-scope="scope">
+							{{scope.row.dengjiriqi}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="clicknum"
+						label="点击次数">
+						<template slot-scope="scope">
+							{{scope.row.clicknum}}
+						</template>
+					</el-table-column>
+					<el-table-column :resizable='true' :sortable='true'  
+						prop="storeupnum"
+						label="收藏数">
+						<template slot-scope="scope">
+							{{scope.row.storeupnum}}
+						</template>
+					</el-table-column>
+					<el-table-column width="300" label="操作">
+						<template slot-scope="scope">
+							<el-button class="view" v-if=" isAuth('qichexinxi','查看')" type="success" @click="addOrUpdateHandler(scope.row.id,'info')">
+								<span class="icon iconfont icon-chakan14" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none","height":"40px"}'></span>
+								浏览
+							</el-button>
+							<el-button class="btn8" v-if="isAuth('qichexinxi','电动车租赁')" @click="qichezulinCrossAddOrUpdateHandler(scope.row,'cross','','','zhuangtai','该电动车已租赁','已租赁,未租赁'.split(',')[0])" type="success">
+								<span class="icon iconfont icon-xihuan" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none","height":"40px"}'></span>
+								电动车租赁
+							</el-button>
+							<el-button class="edit" v-if=" isAuth('qichexinxi','修改') " type="success" @click="addOrUpdateHandler(scope.row.id)">
+								<span class="icon iconfont icon-xiugai10" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none","height":"40px"}'></span>
+								更新
+							</el-button>
+
+
+
+
+							<el-button class="del" v-if="isAuth('qichexinxi','删除') " type="primary" @click="deleteHandler(scope.row.id )">
+								<span class="icon iconfont icon-guanbi1" :style='{"margin":"0 2px","fontSize":"inherit","color":"inherit","display":"none","height":"40px"}'></span>
+								移除
+							</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+			<el-pagination
+				@size-change="sizeChangeHandle"
+				@current-change="currentChangeHandle"
+				:current-page="pageIndex"
+				background
+				:page-sizes="[10, 50, 100, 200]"
+				:page-size="pageSize"
+				:layout="layouts.join()"
+				:total="totalPage"
+				prev-text="上一页 "
+				next-text="下一页 "
+				:hide-on-single-page="false"
+				:style='{"padding":"0","margin":"20px 0 0","whiteSpace":"nowrap","color":"inherit","textAlign":"center","width":"100%","fontSize":"inherit","fontWeight":"500"}'
+			></el-pagination>
+		</template>
+		
+		<!-- 添加/修改页面  将父组件的search方法传递给子组件-->
+		<add-or-update v-if="addOrUpdateFlag" :parent="this" ref="addOrUpdate"></add-or-update>
+
+		<qichezulin-cross-add-or-update v-if="qichezulinCrossAddOrUpdateFlag" :parent="this" ref="qichezulinCrossaddOrUpdate"></qichezulin-cross-add-or-update>
+
+
+
+		<el-dialog
+		  :visible.sync="chartVisiable1"
+		  width="800">
+			<div id="qichefenleiChart1" style="width:100%;height:600px;"></div>
+		  <span slot="footer" class="dialog-footer">
+			<el-button @click="chartDialog1">返回</el-button>
+		  </span>
+		</el-dialog>
+		<el-dialog
+		  :visible.sync="chartVisiable2"
+		  width="800">
+			<div id="zhuangtaiChart2" style="width:100%;height:600px;"></div>
+		  <span slot="footer" class="dialog-footer">
+			<el-button @click="chartDialog2">返回</el-button>
+		  </span>
+		</el-dialog>
+
+		<el-dialog title="预览图" :visible.sync="previewVisible" width="50%">
+			<img :src="previewImg" alt="" style="width: 100%;">
+		</el-dialog>
+	</div>
+</template>
+
+<script>
+import * as echarts from 'echarts'
+import chinaJson from "@/components/echarts/china.json";
+import axios from 'axios'
+import AddOrUpdate from "./add-or-update";
+import qichezulinCrossAddOrUpdate from "../qichezulin/add-or-update";
+	export default {
+		data() {
+			return {
+				qichefenleiOptions: [],
+				zhuangtaiOptions: [],
+				searchForm: {
+					key: ""
+				},
+				form:{},
+				dataList: [],
+				pageIndex: 1,
+				pageSize: 10,
+				totalPage: 0,
+				dataListLoading: false,
+				dataListSelections: [],
+				showFlag: true,
+				chartVisiable1: false,
+				chartVisiable2: false,
+				addOrUpdateFlag:false,
+				qichezulinCrossAddOrUpdateFlag: false,
+				layouts: ["total","prev","pager","next","sizes","jumper"],
+				previewImg: '',
+				previewVisible: false,
+			};
+		},
+		created() {
+			this.init();
+			this.getDataList();
+			this.contentStyleChange()
+		},
+		mounted() {
+		},
+		filters: {
+			htmlfilter: function (val) {
+				return val.replace(/<[^>]*>/g).replace(/undefined/g,'');
+			}
+		},
+		computed: {
+			tablename(){
+				return this.$storage.get('sessionTable')
+			},
+		},
+		components: {
+			AddOrUpdate,
+			qichezulinCrossAddOrUpdate,
+		},
+		methods: {
+			imgPreView(url){
+				this.previewImg = url
+				this.previewVisible = true
+			},
+			contentStyleChange() {
+				this.contentPageStyleChange()
+			},
+			// 分页
+			contentPageStyleChange(){
+				let arr = []
+
+				// if(this.contents.pageTotal) arr.push('total')
+				// if(this.contents.pageSizes) arr.push('sizes')
+				// if(this.contents.pagePrevNext){
+				//   arr.push('prev')
+				//   if(this.contents.pagePager) arr.push('pager')
+				//   arr.push('next')
+				// }
+				// if(this.contents.pageJumper) arr.push('jumper')
+				// this.layouts = arr.join()
+				// this.contents.pageEachNum = 10
+			},
+			qichezulinCrossAddOrUpdateHandler(row,type,crossOptAudit,crossOptPay,statusColumnName,tips,statusColumnValue){
+				this.showFlag = false;
+				this.addOrUpdateFlag = false;
+				this.qichezulinCrossAddOrUpdateFlag = true;
+				this.$storage.set('crossObj',row);
+				this.$storage.set('crossTable','qichexinxi');
+				this.$storage.set('statusColumnName',statusColumnName);
+				this.$storage.set('statusColumnValue',statusColumnValue);
+				this.$storage.set('tips',tips);
+				if(statusColumnName!=''&&!statusColumnName.startsWith("[")) {
+					var obj = this.$storage.getObj('crossObj');
+					for (var o in obj){
+						if(o==statusColumnName && obj[o]==statusColumnValue){
+							this.$message({
+								message: tips,
+								type: "success",
+								duration: 1500,
+								onClose: () => {
+									this.getDataList();
+								}
+							});
+							this.showFlag = true;
+							this.qichezulinCrossAddOrUpdateFlag = false;
+							return;
+						}
+					}
+				}
+				this.$nextTick(() => {
+					this.$refs.qichezulinCrossaddOrUpdate.init(row.id,type);
+				});
+			},
+
+
+//统计接口
+    chartDialog1() {
+      this.chartVisiable1 = !this.chartVisiable1;
+      this.$nextTick(()=>{
+        var qichefenleiChart1 = echarts.init(document.getElementById("qichefenleiChart1"),'macarons');
+        this.$http({
+            url: "qichexinxi/group/qichefenlei",
+            method: "get",
+        }).then(({ data }) => {
+            if (data && data.code === 0) {
+                let res = data.data;
+                let xAxis = [];
+                let yAxis = [];
+                let pArray = []
+                for(let i=0;i<res.length;i++){
+                    xAxis.push(res[i].qichefenlei);
+                    yAxis.push(parseFloat((res[i].total)));
+                    pArray.push({
+                        value: parseFloat((res[i].total)),
+                        name: res[i].qichefenlei
+                    })
+                }
+                var option = {};
+                option = {
+                    title: {
+                        text: '电动车分类',
+                        left: 'center'
+                    },
+                    tooltip: {
+                      trigger: 'item',
+                      formatter: '{b} : {c}'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: xAxis,
+                        axisLabel : {
+                            rotate:40
+                        }
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        data: yAxis,
+                        type: 'bar'
+                    }]
+                };
+                // 使用刚指定的配置项和数据显示图表。
+                qichefenleiChart1.setOption(option);
+                  //根据窗口的大小变动图表
+                window.onresize = function() {
+                    qichefenleiChart1.resize();
+                };
+            }
+        });
+      })
+    },
+
+//统计接口
+    chartDialog2() {
+      this.chartVisiable2 = !this.chartVisiable2;
+      this.$nextTick(()=>{
+
+        var zhuangtaiChart2 = echarts.init(document.getElementById("zhuangtaiChart2"),'macarons');
+        this.$http({
+            url: "qichexinxi/group/zhuangtai",
+            method: "get",
+        }).then(({ data }) => {
+            if (data && data.code === 0) {
+                let res = data.data;
+                let xAxis = [];
+                let yAxis = [];
+                let pArray = []
+                for(let i=0;i<res.length;i++){
+                    xAxis.push(res[i].zhuangtai);
+                    yAxis.push(parseFloat((res[i].total)));
+                    pArray.push({
+                        value: parseFloat((res[i].total)),
+                        name: res[i].zhuangtai
+                    })
+                }
+                var option = {};
+                option = {
+                        title: {
+                            text: '电动车状态',
+                            left: 'center'
+                        },
+                        legend: {
+                          orient: 'vertical',
+                          left: 'left'
+                        },
+                        tooltip: {
+                          trigger: 'item',
+                          formatter: '{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                type: 'pie',
+                                radius: '55%',
+                                center: ['50%', '60%'],
+                                data: pArray,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                };
+                // 使用刚指定的配置项和数据显示图表。
+                zhuangtaiChart2.setOption(option);
+                  //根据窗口的大小变动图表
+                window.onresize = function() {
+                    zhuangtaiChart2.resize();
+                };
+            }
+        });
+      })
+    },
+
+
+
+    init () {
+          this.$http({
+            url: `option/qichefenlei/qichefenlei`,
+            method: "get"
+          }).then(({ data }) => {
+            if (data && data.code === 0) {
+              this.qichefenleiOptions = data.data;
+            } else {
+              this.$message.error(data.msg);
+            }
+          });
+          this.zhuangtaiOptions = "已租赁,未租赁".split(',')
+    },
+    search() {
+      this.pageIndex = 1;
+      this.getDataList();
+    },
+
+    // 获取数据列表
+    getDataList() {
+      this.dataListLoading = true;
+      let params = {
+        page: this.pageIndex,
+        limit: this.pageSize,
+        sort: 'id',
+        order: 'desc',
+      }
+           if(this.searchForm.chepaihao!='' && this.searchForm.chepaihao!=undefined){
+            params['chepaihao'] = '%' + this.searchForm.chepaihao + '%'
+          }
+           if(this.searchForm.qichexinghao!='' && this.searchForm.qichexinghao!=undefined){
+            params['qichexinghao'] = '%' + this.searchForm.qichexinghao + '%'
+          }
+          if(this.searchForm.qichefenlei!='' && this.searchForm.qichefenlei!=undefined){
+            params['qichefenlei'] = this.searchForm.qichefenlei
+          }
+           if(this.searchForm.pinpai!='' && this.searchForm.pinpai!=undefined){
+            params['pinpai'] = '%' + this.searchForm.pinpai + '%'
+          }
+           if(this.searchForm.yanse!='' && this.searchForm.yanse!=undefined){
+            params['yanse'] = '%' + this.searchForm.yanse + '%'
+          }
+          if(this.searchForm.huandangfangshi!='' && this.searchForm.huandangfangshi!=undefined){
+            params['huandangfangshi'] = this.searchForm.huandangfangshi
+          }
+          if(this.searchForm.zhuangtai!='' && this.searchForm.zhuangtai!=undefined){
+            params['zhuangtai'] = this.searchForm.zhuangtai
+          }
+			let user = JSON.parse(this.$storage.getObj('userForm'))
+			console.log(user)
+			this.$http({
+				url: "qichexinxi/page",
+				method: "get",
+				params: params
+			}).then(({ data }) => {
+				if (data && data.code === 0) {
+					this.dataList = data.data.list;
+					this.totalPage = data.data.total;
+				} else {
+					this.dataList = [];
+					this.totalPage = 0;
+				}
+				this.dataListLoading = false;
+			});
+    },
+    // 每页数
+    sizeChangeHandle(val) {
+      this.pageSize = val;
+      this.pageIndex = 1;
+      this.getDataList();
+    },
+    // 当前页
+    currentChangeHandle(val) {
+      this.pageIndex = val;
+      this.getDataList();
+    },
+    // 多选
+    selectionChangeHandler(val) {
+      this.dataListSelections = val;
+    },
+    // 添加/修改
+    addOrUpdateHandler(id,type) {
+      this.showFlag = false;
+      this.addOrUpdateFlag = true;
+      this.crossAddOrUpdateFlag = false;
+      if(type!='info'){
+        type = 'else';
+      }
+      this.$nextTick(() => {
+        this.$refs.addOrUpdate.init(id,type);
+      });
+    },
+	qichexinxistatusChange(e,row){
+		if(row.status==0){
+			row.passwordwrongnum = 0
+		}
+		this.$http({
+			url:'qichexinxi/update',
+			method:'post',
+			data:row
+		}).then(res=>{
+			if(row.status==1){
+				this.$message.error('该用户已锁定')
+			}else{
+				this.$message.success('该用户已解除锁定')
+			}
+		})
+	},
+    // 删除
+    async deleteHandler(id ) {
+		var ids = id? [Number(id)]: this.dataListSelections.map(item => {
+			return Number(item.id);
+		});
+		await this.$confirm(`确定进行[${id ? "删除" : "批量删除"}]操作?`, "提示", {
+			confirmButtonText: "确定",
+			cancelButtonText: "取消",
+			type: "warning"
+		}).then(async () => {
+			await this.$http({
+				url: "qichexinxi/delete",
+				method: "post",
+				data: ids
+			}).then(async ({ data }) => {
+				if (data && data.code === 0) {
+					for(let x in ids){
+						await this.$http.get('storeup/list',{params: {
+							page: 1,
+							limit: 100,
+							refid: ids[x],
+							tablename: 'qichexinxi'
+						}}).then(async obj=>{
+							if(obj.data&&obj.data.code==0){
+								if(obj.data.data.list.length){
+									let arr = []
+									for(let i in obj.data.data.list){
+										arr.push(obj.data.data.list[i].id)
+									}
+									await this.$http.post('storeup/delete',arr).then(()=>{})
+								}
+							}
+						})
+					}
+					this.$message({
+						message: "操作成功",
+						type: "success",
+						duration: 1500,
+						onClose: () => {
+							this.search();
+						}
+					});
+            
+				} else {
+					this.$message.error(data.msg);
+				}
+			});
+		});
+    },
+
+
+  }
+
+};
+</script>
+<style lang="scss" scoped>
+	
+	.center-form-pv {
+	  .el-date-editor.el-input {
+	    width: auto;
+	  }
+	}
+	
+	.el-input {
+	  width: auto;
+	}
+	
+	// form
+	.center-form-pv .el-input /deep/ .el-input__inner {
+				border-radius: 0px;
+				padding: 0 12px;
+				box-shadow: inset 0px 0px 0px 0px #fff;
+				outline: none;
+				color: inherit;
+				background: none;
+				width: 170px;
+				font-size: inherit;
+				border-color: #ddd;
+				border-width: 0 0 1px;
+				border-style: solid;
+				height: 40px;
+			}
+	
+	.center-form-pv .el-select /deep/ .el-input__inner {
+				border-radius: 0px;
+				padding: 0 10px;
+				box-shadow: inset 0px 0px 0px 0px #fff;
+				outline: none;
+				color: inherit;
+				background: none;
+				width: 170px;
+				font-size: inherit;
+				border-color: #ddd;
+				border-width: 0 0 1px;
+				border-style: solid;
+				height: 40px;
+			}
+	
+	.center-form-pv .el-date-editor /deep/ .el-input__inner {
+				border-radius: 0px;
+				padding: 0 10px 0 30px;
+				box-shadow: inset 0px 0px 0px 0px #fff;
+				outline: none;
+				color: inherit;
+				background: none;
+				width: 170px;
+				font-size: inherit;
+				border-color: #dddd;
+				border-width: 0 0 1px;
+				border-style: solid;
+				height: 40px;
+			}
+	
+	.center-form-pv .search {
+				cursor: pointer;
+				border-radius: 0px;
+				padding: 0 24px;
+				outline: none;
+				color: #000;
+				background: none;
+				width: auto;
+				font-size: inherit;
+				border-color: #ddd;
+				border-width: 0 0 1px;
+				border-style: solid;
+				height: 40px;
+			}
+	
+	.center-form-pv .search:hover {
+				color: #333;
+				background: #FFFF99;
+			}
+	
+	.center-form-pv .actions .add {
+				cursor: pointer;
+				padding: 0 10px 0 10px;
+				margin: 4px 0px 5px;
+				color: inherit;
+				font-size: inherit;
+				border-color: #fff;
+				border-radius: 4px;
+				outline: none;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				border-width: 0px;
+				border-style: solid;
+				height: auto;
+			}
+	
+	.center-form-pv .actions .add:hover {
+				color: #000;
+				background: none;
+				opacity: 1;
+			}
+	
+	.center-form-pv .actions .del {
+				cursor: pointer;
+				padding: 0 10px 0 10px;
+				margin: 4px 0px 5px;
+				color: inherit;
+				font-size: inherit;
+				border-color: #999;
+				border-radius: 0px;
+				outline: none;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				border-width: 0 0 0 1px;
+				border-style: solid;
+				height: auto;
+			}
+	
+	.center-form-pv .actions .del:hover {
+				color: #000;
+				background: none;
+				opacity: 1;
+			}
+	
+	.center-form-pv .actions .statis {
+				cursor: pointer;
+				padding: 0 10px 0 10px;
+				margin: 4px 0px 5px;
+				color: inherit;
+				font-size: inherit;
+				border-color: #999;
+				border-radius: 0px;
+				outline: none;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				border-width: 0 0 0 1px;
+				border-style: solid;
+				height: auto;
+			}
+	
+	.center-form-pv .actions .statis:hover {
+				color: #000;
+				background: none;
+				opacity: 1;
+			}
+	
+	.center-form-pv .actions .btn18 {
+				cursor: pointer;
+				padding: 0 10px 0 10px;
+				margin: 4px 0px 5px;
+				color: inherit;
+				font-size: inherit;
+				border-color: #999;
+				border-radius: 0px;
+				outline: none;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				border-width: 0 0 0 1px;
+				border-style: solid;
+				height: auto;
+			}
+	
+	.center-form-pv .actions .btn18:hover {
+				color: #000;
+				background: none;
+				opacity: 1;
+			}
+	
+	// table
+	.el-table /deep/ .el-table__header-wrapper thead {
+				color: #333;
+				background: #FFFF99;
+				width: 100%;
+			}
+	
+	.el-table /deep/ .el-table__header-wrapper thead tr {
+				background: none;
+			}
+	
+	.el-table /deep/ .el-table__header-wrapper thead tr th {
+				padding: 2px 0;
+				background: none;
+				border-color: #eee;
+				border-width: 0 1px 1px 0;
+				border-style: solid;
+				text-align: left;
+			}
+
+	.el-table /deep/ .el-table__header-wrapper thead tr th .cell {
+				padding: 0 10px;
+				word-wrap: normal;
+				word-break: break-all;
+				white-space: normal;
+				font-weight: 500;
+				display: inline-block;
+				vertical-align: middle;
+				width: 100%;
+				line-height: 24px;
+				position: relative;
+				text-overflow: ellipsis;
+			}
+
+	
+	.el-table /deep/ .el-table__body-wrapper tbody {
+				padding: 0;
+				width: 100%;
+			}
+
+	.el-table /deep/ .el-table__body-wrapper tbody tr {
+				background: none;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td {
+				padding: 2px 0;
+				color: inherit;
+				background: none;
+				font-size: 14px;
+				border-color: #eee;
+				border-width: 0 1px 1px 0px;
+				border-style: solid;
+				text-align: left;
+			}
+	
+		
+	.el-table /deep/ .el-table__body-wrapper tbody tr:hover td {
+				padding: 2px 0;
+				color: #666;
+				background: rgba(225,225,225,.16);
+				border-color: #eee;
+				border-width: 0 1px 1px 0px;
+				border-style: solid;
+				text-align: left;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td {
+				padding: 2px 0;
+				color: inherit;
+				background: none;
+				font-size: 14px;
+				border-color: #eee;
+				border-width: 0 1px 1px 0px;
+				border-style: solid;
+				text-align: left;
+			}
+
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .cell {
+				padding: 0 10px;
+				overflow: hidden;
+				color: inherit;
+				word-break: break-all;
+				white-space: normal;
+				line-height: 24px;
+				text-overflow: ellipsis;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .view {
+				cursor: pointer;
+				border: none;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0 5px 2px 0;
+				outline: none;
+				color: #008789;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .view:hover {
+				opacity: 0.8;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .add {
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .add:hover {
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .edit {
+				border: 0px solid rgba(254, 148, 34, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0 5px 2px 0;
+				outline: none;
+				color: #1099ff;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .edit:hover {
+				opacity: 0.8;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .del {
+				border: 0px solid rgba(180, 52, 31, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0 5px 2px 0;
+				outline: none;
+				color: #ff6523;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				font-size: inherit;
+				height: inherit;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .del:hover {
+				opacity: 0.8;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .btn8 {
+				border: 0px solid rgba(31, 160, 180, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0 5px 2px 0;
+				outline: none;
+				color: #008900;
+				background: rgba(255,255,255,.0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.el-table /deep/ .el-table__body-wrapper tbody tr td .btn8:hover {
+				opacity: 0.8;
+			}
+	
+	// pagination
+	.main-content .el-pagination /deep/ .el-pagination__total {
+				margin: 0 10px 0 0;
+				color: inherit;
+				font-weight: 400;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 28px;
+				height: 28px;
+			}
+	
+	.main-content .el-pagination /deep/ .btn-prev {
+				border: 1px solid #eee;
+				border-radius: 2px;
+				padding: 0 5px;
+				margin: 0 5px;
+				color: inherit;
+				background: none;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				min-width: 35px;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .btn-next {
+				border: 1px solid #eee;
+				border-radius: 2px;
+				padding: 0 5px;
+				margin: 0 5px;
+				color: inherit;
+				background: none;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				min-width: 35px;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .btn-prev:disabled {
+				border: none;
+				cursor: not-allowed;
+				border-radius: 2px;
+				padding: 0 5px;
+				margin: 0 5px;
+				color: #999;
+				background: none;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 28px;
+				height: 28px;
+			}
+	
+	.main-content .el-pagination /deep/ .btn-next:disabled {
+				border: none;
+				cursor: not-allowed;
+				border-radius: 2px;
+				padding: 0 5px;
+				margin: 0 5px;
+				color: #999;
+				background: none;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 28px;
+				height: 28px;
+			}
+
+	.main-content .el-pagination /deep/ .el-pager {
+				padding: 0;
+				margin: 0;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+			}
+
+	.main-content .el-pagination /deep/ .el-pager .number {
+				cursor: pointer;
+				border: 1px solid #eee;
+				padding: 0 4px;
+				margin: 0 5px;
+				color: inherit;
+				background: none;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				text-align: center;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pager .number:hover {
+				cursor: pointer;
+				padding: 0 4px;
+				margin: 0 5px;
+				color: #333;
+				background: #FFFF99;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				text-align: center;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pager .number.active {
+				cursor: default;
+				border: 1px solid #eee;
+				padding: 0 4px;
+				margin: 0 5px;
+				color: #333;
+				background: #FFFF99;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				text-align: center;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__sizes {
+				color: inherit;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 24px;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__sizes .el-input {
+				margin: 0 5px;
+				color: inherit;
+				width: 100px;
+				font-size: inherit;
+				position: relative;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__sizes .el-input .el-input__inner {
+				border: 1px solid #eee;
+				cursor: pointer;
+				padding: 0 25px 0 8px;
+				color: inherit;
+				display: inline-block;
+				font-size: inherit;
+				line-height: 24px;
+				border-radius: 3px;
+				outline: 0;
+				background: none;
+				width: 100%;
+				text-align: center;
+				height: 24px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__sizes .el-input span.el-input__suffix {
+				top: 0;
+				position: absolute;
+				right: 0;
+				height: 100%;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__sizes .el-input .el-input__suffix .el-select__caret {
+				cursor: pointer;
+				color: #C0C4CC;
+				width: 25px;
+				font-size: 14px;
+				line-height: 28px;
+				text-align: center;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__jump {
+				margin: 0 0 0 24px;
+				color: inherit;
+				display: inline-block;
+				vertical-align: top;
+				font-size: inherit;
+				line-height: 28px;
+				height: 28px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__jump .el-input {
+				border-radius: 3px;
+				padding: 0 2px;
+				margin: 0 2px;
+				color: inherit;
+				display: inline-block;
+				width: 50px;
+				font-size: inherit;
+				line-height: 18px;
+				position: relative;
+				text-align: center;
+				height: 28px;
+			}
+	
+	.main-content .el-pagination /deep/ .el-pagination__jump .el-input .el-input__inner {
+				cursor: pointer;
+				padding: 0 0px;
+				color: inherit;
+				display: inline-block;
+				font-size: inherit;
+				border-color: #eee;
+				line-height: 24px;
+				border-radius: 0px;
+				background: none;
+				width: auto;
+				border-width: 0 0 1px;
+				border-style: solid;
+				text-align: center;
+				height: 24px;
+			}
+	
+	// list one
+	.one .list1-view {
+				border: 0px solid rgba(126, 96, 16, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0px 5px 5px 0;
+				outline: none;
+				color: #00878a;
+				background: rgba(86,178,198,.0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.one .list1-view:hover {
+				opacity: 0.8;
+			}
+	
+	.one .list1-edit {
+				border: 0px solid rgba(254, 148, 34, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0px 5px 5px 0;
+				outline: none;
+				color: #1198ff;
+				background: none;
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.one .list1-edit:hover {
+				opacity: 0.8;
+			}
+	
+	.one .list1-del {
+				border: 0px solid rgba(180, 52, 31, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0px 5px 5px 0;
+				outline: none;
+				color: #ff6523;
+				background: rgba(255, 0, 0, 0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.one .list1-del:hover {
+				opacity: 0.8;
+			}
+	
+	.one .list1-btn8 {
+				border: 0px solid rgba(31, 160, 180, .2);
+				cursor: pointer;
+				border-radius: 20px;
+				padding: 0 6px 0 4px;
+				margin: 0px 5px 5px 0;
+				outline: none;
+				color: #008900;
+				background: rgba(255, 128, 0, 0);
+				width: auto;
+				font-size: inherit;
+				height: 32px;
+			}
+	
+	.one .list1-btn8:hover {
+				opacity: 0.8;
+			}
+	
+	.main-content .el-table .el-switch {
+				display: inline-flex;
+				vertical-align: middle;
+				line-height: 30px;
+				position: relative;
+				align-items: center;
+				height: 30px;
+			}
+	.main-content .el-table .el-switch /deep/ .el-switch__label--left {
+				cursor: pointer;
+				margin: 0 10px 0 0;
+				color: #333;
+				font-weight: 500;
+				display: inline-block;
+				vertical-align: middle;
+				font-size: 16px;
+				transition: .2s;
+				height: 30px;
+			}
+	.main-content .el-table .el-switch /deep/ .el-switch__label--right {
+				cursor: pointer;
+				margin: 0 0 0 10px;
+				color: #333;
+				font-weight: 500;
+				display: inline-block;
+				vertical-align: middle;
+				font-size: 16px;
+				transition: .2s;
+				height: 30px;
+			}
+	.main-content .el-table .el-switch /deep/ .el-switch__core {
+				border: 1px solid #ccc;
+				cursor: pointer;
+				border-radius: 15px;
+				margin: 0;
+				outline: 0;
+				background: #FFFF99;
+				display: inline-block;
+				width: 50px;
+				box-sizing: border-box;
+				transition: border-color .3s,background-color .3s;
+				height: 24px;
+			}
+	.main-content .el-table .el-switch /deep/ .el-switch__core::after {
+				border-radius: 100%;
+				top: 1px;
+				left: 1px;
+				background: #ccc;
+				width: 20px;
+				position: absolute;
+				transition: all .3s;
+				height: 20px;
+			}
+	.main-content .el-table .el-switch.is-checked /deep/ .el-switch__core::after {
+				margin: 0 0 0 -27px;
+				left: 100%;
+				background: #ccc;
+			}
+	
+	.main-content .el-table .el-rate /deep/ .el-rate__item {
+				cursor: pointer;
+				display: inline-block;
+				vertical-align: middle;
+				font-size: 0;
+				position: relative;
+			}
+	.main-content .el-table .el-rate /deep/ .el-rate__item .el-rate__icon {
+				margin: 0 3px;
+				color: #666;
+				display: inline-block;
+				font-size: 18px;
+				position: relative;
+				transition: .3s;
+			}
+
+</style>
